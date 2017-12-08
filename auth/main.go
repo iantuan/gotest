@@ -41,6 +41,8 @@ func main() {
 
     session, err := mgo.Dial("127.0.0.1")
     
+    fmtp.Println(session)
+
     defer session.Close()
     defer loginClient.Close()
 
