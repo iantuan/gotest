@@ -42,7 +42,8 @@ func main() {
 
     session, err := mgo.Dial("mymongo")
     
-    fmt.Println(session)
+    
+    fmt.Println("session addr", session)
 
     defer session.Close()
     defer loginClient.Close()
@@ -68,9 +69,9 @@ func handleLogin(m *nats.Msg) {
     }
 
     log.Println("Received login message: %v, %#v", m.Subject, l)
+    fmt.Println("session addr", session)
     
     fmt.Println(reflect.TypeOf(session))
-
     s, err := mgo.Dial("mymongo")
 
     s.SetMode(mgo.Monotonic, true)
