@@ -71,7 +71,7 @@ func handleLogin(m *nats.Msg) {
     
     fmt.Println(reflect.TypeOf(session))
 
-    s, err := mgo.Dial("127.0.0.1")
+    s, err := mgo.Dial("mymongo")
 
     s.SetMode(mgo.Monotonic, true)
     //go processLogin(l)
