@@ -22,7 +22,8 @@ var session *mgo.Session
  
 var loginClient *nats.Conn
 
-var natsServer = flag.String("nats", "127.0.0.1:4223", "NATS server URI")
+//var natsServer = flag.String("nats", "127.0.0.1:4223", "NATS server URI")
+var natsServer = flag.String("nats", "nats-b:4222", "NATS server URI")
 
 func init() {
 
@@ -39,7 +40,7 @@ func main() {
         log.Fatal(err)
     }
 
-    session, err := mgo.Dial("127.0.0.1")
+    session, err := mgo.Dial("mymongo")
     
     fmt.Println(session)
 
@@ -80,7 +81,7 @@ func handleLogin(m *nats.Msg) {
     result := Login{}
     err = c.Find(bson.M{"name": l.Name}).One(&result)
     if err != nil {
-        log.Fatal(err)
+        fmt.Println(err)
 
     }
 

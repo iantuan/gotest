@@ -16,7 +16,9 @@ type login struct {
 
 
 
-var natsServer = flag.String("nats", "127.0.0.1:4224", "NATS server URI")
+//var natsServer = flag.String("nats", "127.0.0.1:4224", "NATS server URI")
+var natsServer = flag.String("nats", "nats-a:4222", "NATS server URI")
+
 var natsClient *nats.Conn
 
 func init() {
@@ -40,8 +42,10 @@ func main() {
     defer natsClient.Close()
 
     http.DefaultServeMux.HandleFunc("/login", loginHandler)
-    log.Println("Starting product write service on port 8802")	
-    log.Fatal(http.ListenAndServe(":8802", http.DefaultServeMux))
+    
+
+    log.Println("Starting product write service on port 8080") 
+    log.Fatal(http.ListenAndServe(":8080", http.DefaultServeMux))
 }
 
 func loginHandler(rw http.ResponseWriter, r *http.Request) {
