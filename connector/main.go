@@ -9,17 +9,13 @@ import (
     "github.com/nats-io/nats"
 )
 
+var natsServer = flag.String("nats", "nats-a:4222", "NATS server URI")
+
 type login struct {
 	Name string `json:"name"`
 	Pass  string `json:"pass"`
 }
 
-
-
-//var natsServer = flag.String("nats", "127.0.0.1:4224", "NATS server URI")
-var natsServer = flag.String("nats", "nats-a:4222", "NATS server URI")
-
-var natsClient *nats.Conn
 
 func init() {
 	
@@ -41,39 +37,21 @@ func main() {
 	
     defer natsClient.Close()
 
-    http.DefaultServeMux.HandleFunc("/login", loginHandler)
-    
+    l := &login_handler{
+        nats_client: natsClient,
+    }
+
+    http.Handle("/login", l)
+    //http.DefaultServeMux.HandleFunc("/login", loginHandler)
+    go l.run()
+
+    if err := http.ListenAndServe(*addr, nil); err != nil {
+        log.Fatal("ListenAndServe:", err)
+    }
 
     log.Println("Starting product write service on port 8080") 
     log.Fatal(http.ListenAndServe(":8080", http.DefaultServeMux))
 }
 
-func loginHandler(rw http.ResponseWriter, r *http.Request) {
-
-    if r.Method == "POST" {
-             
-        log.Println("/login handler called")
-        data, err := ioutil.ReadAll(r.Body)
-        if err != nil {
-            rw.WriteHeader(http.StatusBadRequest)
-            return
-        }
-        defer r.Body.Close()
-
-        log.Println("data: %v", data)        	
-
-        l := login{}
-        err1 := json.Unmarshal(data, &l)
-
-        if err1 != nil {
-        log.Println("Unable to unmarshal event object")
-            return
-        }
-
-        log.Printf("Received login message: %#v", l)
-        natsClient.Publish("login", data)
-    }
-
-}
 
 
