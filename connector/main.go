@@ -1,9 +1,7 @@
 package main
 
 import (
-    "encoding/json"
     "flag"
-    "io/ioutil"
     "log"
     "net/http"
     "github.com/nats-io/nats"

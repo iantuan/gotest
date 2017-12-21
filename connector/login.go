@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"flag"
 	"io/ioutil"
 	"net/http"
 	"github.com/nats-io/nats"
