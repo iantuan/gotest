@@ -39,6 +39,7 @@ func main() {
 
     l := &login_handler{
         nats_client: natsClient,
+        conn: make(chan string),
     }
 
     http.Handle("/login", l)

@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net/http"
 )
 
 type clinet struct {

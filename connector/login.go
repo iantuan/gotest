@@ -67,7 +67,8 @@ func (l *login_handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		send_msg, _ := json.Marshal(li)
 
 		c := &client{
-			resp
+			handler: l,
+			reply = make(chan string),
 		}
 		
 		l.nats_client.Publish("login", send_msg)
