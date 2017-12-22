@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"github.com/nats-io/nats"
@@ -18,7 +19,7 @@ type login_info struct {
 
 type login_handler struct {
 	nats_client *nats.Conn
-	conn chan string
+	conn chan []byte
 }
 
 func (l *login_handler) run() {
@@ -62,17 +63,28 @@ func (l *login_handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+
+		log.Println("recv request %#v", li)
+
 		li.UUID = uuid.NewV4().String()
 		send_msg, _ := json.Marshal(li)
 
+		log.Println("send_msg", send_msg)
 		c := &client{
 			handler: l,
-			reply: make(chan string),
+			reply: make(chan []byte, 256),
 		}
 		
 		l.nats_client.Publish("login", send_msg)
 
-		c.wait_response(li.UUID)
+		a := c.wait_response(li.UUID)
+
+		reply_msg, _ := json.Marshal(a)
+		
+		w.Header().Set("Content-Type", "application/json")
+
+		w.Write(reply_msg)
+		//fmt.Fprint(w, reply_msg)
 	}
 
 }

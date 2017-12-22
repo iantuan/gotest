@@ -10,13 +10,19 @@ import (
     "github.com/nats-io/nats"
     "gopkg.in/mgo.v2"    
     "gopkg.in/mgo.v2/bson"
+    "github.com/satori/go.uuid"
 )
 
 type Login struct {
-	Name string 
-	Pass string 
+	UUID string `json:"uuid"`
+	Name string `json:"name"`
+	Pass string `json:"pass"`
 }
 
+type reply_msg struct {
+	Token string `json:"token"`
+	Error int `json:"error"`
+}
 
 var session *mgo.Session
  
@@ -79,6 +85,7 @@ func handleLogin(m *nats.Msg) {
     c := s.DB("bigpower").C("player")
 
     fmt.Println(reflect.TypeOf(c))
+
     result := Login{}
     err = c.Find(bson.M{"name": l.Name}).One(&result)
     if err != nil {
@@ -87,6 +94,18 @@ func handleLogin(m *nats.Msg) {
     }
 
     fmt.Println(result.Pass)
+
+    r := reply_msg{}
+
+    if (l.Pass == result.Pass) {
+        r.Token = uuid.NewV4().String()
+        r.Error = 0
+    } else {
+        r.Error = -1
+    }
+    send_msg, _ := json.Marshal(r)
+
+    loginClient.Publish(l.UUID, send_msg)
 
 }
 

@@ -9,11 +9,7 @@ import (
 
 var natsServer = flag.String("nats", "nats-a:4222", "NATS server URI")
 
-type login struct {
-	Name string `json:"name"`
-	Pass  string `json:"pass"`
-}
-
+var natsClient *nats.Conn
 
 func init() {
 	
@@ -26,7 +22,8 @@ func main() {
 	
     var err error
     log.Println(*natsServer)
-	
+    var addr = flag.String("addr", ":8080", "The addr of the application.")
+    
     natsClient, err = nats.Connect("nats://" + *natsServer)
 	
     if err != nil {
@@ -37,7 +34,7 @@ func main() {
 
     l := &login_handler{
         nats_client: natsClient,
-        conn: make(chan string),
+        conn: make(chan []byte, 256),
     }
 
     http.Handle("/login", l)
