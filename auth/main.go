@@ -12,12 +12,31 @@ import (
     "gopkg.in/mgo.v2/bson"
     "github.com/satori/go.uuid"
 )
+type UserInfo struct {
+    Id   bson.ObjectId `json:"id" bson:"_id,omitempty"`
+    Name string `json:"name"`
+    Pass string `json:"pass"`
+    Token string `json:"token"`
+}
+
+type AuthInfo struct {
+	UUID string `json:"uuid"`
+	Token string `json:"token"`
+}
+
+type AuthReply struct {
+    Error int `json:"error"`
+    Cmd string `json:"cmd"`
+    Name string `json:"name"`
+}
 
 type Login struct {
 	UUID string `json:"uuid"`
 	Name string `json:"name"`
 	Pass string `json:"pass"`
 }
+
+
 
 type reply_msg struct {
 	Token string `json:"token"`
@@ -83,10 +102,10 @@ func handleLogin(m *nats.Msg) {
     s.SetMode(mgo.Monotonic, true)
     //go processLogin(l)
     c := s.DB("bigpower").C("player")
-
+    
     fmt.Println(reflect.TypeOf(c))
 
-    result := Login{}
+    result := UserInfo{}
     err = c.Find(bson.M{"name": l.Name}).One(&result)
     if err != nil {
         fmt.Println(err)
@@ -98,8 +117,16 @@ func handleLogin(m *nats.Msg) {
     r := reply_msg{}
 
     if (l.Pass == result.Pass) {
-        r.Token = uuid.NewV4().String()
+        token := uuid.NewV4().String()
+        r.Token = token
         r.Error = 0
+        result.Token = token
+
+        selector := bson.M{"_id": result.Id}
+        data := bson.M{"$set": bson.M{"token": token}}
+         
+        err = c.Update(selector, data)
+
     } else {
         r.Error = -1
     }
@@ -113,6 +140,41 @@ func handleAuth(m *nats.Msg) {
      
     log.Printf("Received auth message: %v, %#v", m.Subject, m.Data)
 
+    a := AuthInfo{}
+    err := json.Unmarshal(m.Data, &a)
+
+    if err != nil {
+        log.Println("Unable to unmarshal event object")
+            return
+        }
+    
+        log.Println("Received auth message: %v, %#v", m.Subject, a)
+        fmt.Println("session addr", session)
+        
+        fmt.Println(reflect.TypeOf(session))
+        s, err := mgo.Dial("mymongo")
+    
+        s.SetMode(mgo.Monotonic, true)
+        //go processLogin(l)
+        c := s.DB("bigpower").C("player")
+
+        result := UserInfo{}
+        err = c.Find(bson.M{"token": a.Token}).One(&result)
+        
+        r := AuthReply{}
+        r.Cmd = "Auth"
+        
+        if (a.Token == result.Token) {
+            r.Error = 0 
+            r.Name = result.Name
+
+        } else {
+            r.Error = -1
+        }
+
+        send_msg, _ := json.Marshal(r)
+
+        loginClient.Publish(a.UUID, send_msg)
 }
 
 //func processLogin(l login) {

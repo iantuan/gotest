@@ -44,6 +44,8 @@ func (l *login_handler) handlePublish(m *nats.Msg) {
 
 func (l *login_handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
+	//log.Println(r.URL.Path)
+
 	if r.Method == "POST" {
 		log.Println("/login handler called")
 		data, err := ioutil.ReadAll(r.Body)

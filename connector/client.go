@@ -26,12 +26,13 @@ func (c* client) response_handler(m *nats.Msg) {
 
 func (c *client) wait_response(uuid string) auth_token {
 
-	 c.handler.nats_client.QueueSubscribe(uuid, "auth_group",  c.response_handler)
+	 s,_ := c.handler.nats_client.QueueSubscribe(uuid, "auth_group",  c.response_handler)
 	 
 	 t := auth_token{}
 
 	 for data := range c.reply {
 
+		 s.Unsubscribe()
 		 err := json.Unmarshal(data, &t)
 		 if err != nil {
 			 log.Println("Unable to unmarshal event")

@@ -37,7 +37,13 @@ func main() {
         conn: make(chan []byte, 256),
     }
 
+    s := &socket_handler{
+        nats_client: natsClient,
+        conn: make(chan []byte, 256),   
+    }
     http.Handle("/login", l)
+    http.Handle("/auth/", s)
+
     //http.DefaultServeMux.HandleFunc("/login", loginHandler)
     go l.run()
 
