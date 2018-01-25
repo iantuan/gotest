@@ -11,12 +11,18 @@ import (
     "gopkg.in/mgo.v2"    
     "gopkg.in/mgo.v2/bson"
     "github.com/satori/go.uuid"
+    "github.com/go-redis/redis"
 )
 type UserInfo struct {
     Id   bson.ObjectId `json:"id" bson:"_id,omitempty"`
     Name string `json:"name"`
     Pass string `json:"pass"`
     Token string `json:"token"`
+}
+
+type UserRedis struct {
+    UserInfo
+    UUID string `json:"uuid"`
 }
 
 type AuthInfo struct {
@@ -136,6 +142,43 @@ func handleLogin(m *nats.Msg) {
 
 }
 
+func saveToRedis(u *UserInfo, uuid string) {
+    client := redis.NewClient(&redis.Options{
+		Addr:     "myredis:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+    })
+
+    redis_info := UserRedis{
+        UserInfo: *u,
+        UUID: uuid,
+    }
+    val, _ := json.Marshal(redis_info)
+
+    err := client.Set(u.Name, val, 0).Err()
+
+    
+	if err != nil {
+		log.Println("Unable to save user info to redis")
+            return
+	}
+
+    socket := redis.NewClient(&redis.Options{
+        Addr: "myredis:6379",
+        Password: "",
+        DB:       1,
+    })
+
+    val, _ = json.Marshal(*u)
+    err = socket.Set(uuid, val, 0).Err()
+
+    if err != nil {
+		log.Println("Unable to save user info to redis")
+            return
+	}
+
+}
+
 func handleAuth(m *nats.Msg) {
      
     log.Printf("Received auth message: %v, %#v", m.Subject, m.Data)
@@ -175,21 +218,8 @@ func handleAuth(m *nats.Msg) {
         send_msg, _ := json.Marshal(r)
 
         loginClient.Publish(a.UUID, send_msg)
+
+        saveToRedis(&result, a.UUID)
 }
-
-//func processLogin(l login) {
-
-//    c := session.DB("bigpower").C("player")
-
-//    result := login{}
-//    err := c.Find(bson.M{"name": "ian"}).One(&result)
-//    if err != nil {
-//        log.Fatal(err)
-
-//    }
-
-//    fmt.Println(result.Pass)
-
-//}
 
 

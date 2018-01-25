@@ -37,15 +37,19 @@ func main() {
         conn: make(chan []byte, 256),
     }
 
-    s := &socket_handler{
-        nats_client: natsClient,
-        conn: make(chan []byte, 256),   
-    }
+    s := new_socket_handler(natsClient)
+    
+    //s := &socket_handler{
+    //    nats_client: natsClient,
+    //    conn: make(chan []byte, 256),   
+    //}
     http.Handle("/login", l)
     http.Handle("/auth/", s)
 
+
     //http.DefaultServeMux.HandleFunc("/login", loginHandler)
     go l.run()
+    go s.run()
 
     if err := http.ListenAndServe(*addr, nil); err != nil {
         log.Fatal("ListenAndServe:", err)

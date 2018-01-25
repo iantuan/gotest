@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/nats-io/nats"
 	"github.com/satori/go.uuid"
+	"github.com/go-redis/redis"
 )
 
 const (
@@ -26,10 +27,35 @@ type AuthInfo struct {
 type socket_handler struct {
 	nats_client *nats.Conn
 	conn chan []byte
-	authed_clients map[*client]bool
-	unauthed_clients map[*client]bool
+	leave chan *wsclient
+	//authed_clients map[*client]bool
+	//unauthed_clients map[*client]bool
 }
 
+func new_socket_handler(n *nats.Conn) *socket_handler {
+
+	return &socket_handler{
+		nats_client: n,
+		conn: make(chan []byte, 256), 
+		leave: make(chan *wsclient),
+	}
+}
+
+func (s *socket_handler) run() {
+
+	for {
+		select {
+		case client := <-s.leave:
+			rdb := redis.NewClient(&redis.Options{
+				Addr:     "myredis:6379",
+				Password: "", // no password set
+				DB:       1,  // use default DB
+			})
+			
+			rdb.Del(client.UUID)
+		}
+	}
+}
 
 func (s *socket_handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	
@@ -62,6 +88,8 @@ func (s *socket_handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		reply:   make(chan []byte, messageBufferSize),
 		handler:   s,
 	}
+
+	defer func() { s.leave <- client}()
 
 	go client.listen()
 	client.read()
