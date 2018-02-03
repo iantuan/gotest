@@ -1,0 +1,95 @@
+version: '2'
+services:
+  nats-a:
+    container_name: nats-a
+    image: nats
+    entrypoint: "/gnatsd -c /tmp/cluster.conf -p 4222 -D -V"
+    volumes:
+      - /opt/nats-conf/gnatsd-A.conf:/tmp/cluster.conf
+    networks:
+      - bigpower
+    ports:
+      - "4222:4222"
+      - "7244:7244"
+
+  nats-b:
+    container_name: nats-b
+    image: nats
+    entrypoint: "/gnatsd -c /tmp/cluster.conf -p 4222 -D -V"
+    volumes:
+      - /opt/nats-conf/gnatsd-B.conf:/tmp/cluster.conf
+    networks:
+      - bigpower
+    ports:
+      - "4223:4222"
+      - "7245:7244"
+
+
+  nats-c:
+    container_name: nats-c
+    image: nats
+    entrypoint: "/gnatsd -c /tmp/cluster.conf -p 4222 -D -V"
+    volumes:
+      - /opt/nats-conf/gnatsd-C.conf:/tmp/cluster.conf
+    networks:
+      - bigpower
+    ports:
+      - "4224:4222"
+      - "7246:7244"
+
+  myredis:
+    container_name: myredis
+    image: redis
+    networks:
+      - bigpower
+    ports:
+      - "6379:6379"
+
+  mymongo:
+    container_name: mymongo
+    image: mongo:3.4.10-jessie
+    volumes:
+      - /opt/mgodata/db:/data/db
+      - /opt/mgodata/configdb:/data/configdb
+    networks:
+      - bigpower
+    ports:
+      - "27017:27017"
+    command:
+      mongod
+
+  conn-1:
+    container_name: conn-1
+    image: iantuan/golang
+    depends_on:
+      - nats-a
+    volumes:
+      - /opt/gotest:/root/gotest
+    working_dir: /root/gotest/connector
+    networks:
+      - bigpower
+    ports:
+      - "8080:8080"
+    command:
+      ./connector
+
+  auth-1:
+    container_name: auth-1
+    image: iantuan/golang
+    depends_on:
+      - nats-b
+      - mymongo
+    volumes:
+      - /opt/gotest:/root/gotest
+    working_dir: /root/gotest/auth
+    networks:
+      - bigpower
+    command:
+      ./auth
+    
+networks:
+  bigpower:
+    external:
+      name: bigpower
+
+
